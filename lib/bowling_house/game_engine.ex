@@ -10,12 +10,14 @@ defmodule BowlingHouse.GameEngine do
   """
   def start_link(options) when is_list(options) do
     name = Keyword.fetch!(options, :name)
-    GenServer.start_link(__MODULE__, options, name: name)
+    default_state = Keyword.get(options, :default_state, [])
+    GenServer.start_link(__MODULE__, default_state, name: name)
   end
 
   @doc """
   GenServer.init/1 callback
   """
+  @impl true
   def init(state), do: {:ok, state}
 
   def handle_call({:throw_ball, hits}, _from, []) do
@@ -25,7 +27,7 @@ defmodule BowlingHouse.GameEngine do
       score: hits
     }
 
-    {:reply, {_message = "hit!", _updated_frames = [frame]}, [frame]}
+    {:reply, {_message = :hit, _updated_frames = [frame]}, [frame]}
   end
 
   def handle_call({:throw_ball, hits}, _from, frames) do
@@ -42,20 +44,20 @@ defmodule BowlingHouse.GameEngine do
 
         # if the 10th frame wasn't a strike, and we are at the bonus frame, we end the game
         Enum.count(frames) == 11 ->
-          {"end of game", frames}
+          {:end_of_game, frames}
 
         Enum.count(frames) == 10 && (Frame.strike?(last_frame) || Frame.spare?(last_frame)) ->
           # the 10th frame hit a strike or a spare, we allow one more frame with one hit at least
           append_new_frame(hits, frames)
 
         Enum.count(frames) == 10 ->
-          {"end of game", frames}
+          {:end_of_game, frames}
 
         Frame.strike?(last_frame) || Frame.spare?(last_frame) || Frame.done?(last_frame) ->
           append_new_frame(hits, frames)
 
         Frame.exceed_frame_limit?(last_frame, hits) == true ->
-          {"exceed frame limit", frames}
+          {:exceed_frame_limit, frames}
 
         true ->
           update_and_append_frame(hits, last_frame, reversed_frames)
@@ -70,14 +72,14 @@ defmodule BowlingHouse.GameEngine do
       score: hits
     }
 
-    {"hit!", existing_frames ++ [frame]}
+    {:hit, existing_frames ++ [frame]}
   end
 
   defp update_and_append_frame(hits, current_frame, reversed_frames)
        when length(reversed_frames) <= 1 do
     updated_current_frame = Frame.add_hits(current_frame, hits)
     updated_frames = Enum.reverse(reversed_frames, [updated_current_frame])
-    {"hit!", updated_frames}
+    {:hit, updated_frames}
   end
 
   # this is where we complete the value of a frame
@@ -117,27 +119,28 @@ defmodule BowlingHouse.GameEngine do
           Enum.reverse(reversed_frames, [updated_current_frame])
       end
 
-    {"hit!", updated_frames}
+    {:hit, updated_frames}
   end
 
   def handle_call(:reset, _from, frames) do
     {:reply, frames, []}
   end
+
   def handle_call(:game_score, _from, frames) do
     score = Enum.reduce(frames, 0, &(&1.score + &2))
 
     {:reply, score, frames}
   end
 
-  def roll(name \\ __MODULE__, no_of_pins) when is_integer(no_of_pins) and no_of_pins < 11 do
-    GenServer.call(name, {:throw_ball, no_of_pins})
-  end
+  # def roll(name \\ __MODULE__, no_of_pins) when is_integer(no_of_pins) and no_of_pins < 11 do
+  #   GenServer.call(name, {:throw_ball, no_of_pins})
+  # end
 
-  def reset_state(name \\ __MODULE__) do
-    GenServer.call(name, :reset)
-  end
+  # def reset_state(name \\ __MODULE__) do
+  #   GenServer.call(name, :reset)
+  # end
 
-  def get_game_score(name \\ __MODULE__) do
-    GenServer.call(name, :game_score)
-  end
+  # def get_game_score(name \\ __MODULE__) do
+  #   GenServer.call(name, :game_score)
+  # end
 end

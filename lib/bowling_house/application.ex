@@ -11,7 +11,9 @@ defmodule BowlingHouse.Application do
       # Start the Ecto repository
       BowlingHouse.Repo,
       # Start Bowling game
-      # BowlingHouse.GameEngine,
+      {Registry, keys: :unique, name: BowlingHouse.GameEngineRegistry},
+      BowlingHouse.GameManager,
+      {DynamicSupervisor, strategy: :one_for_one, name: BowlingHouse.GameEngineSupervisor},
       # Start the Telemetry supervisor
       BowlingHouseWeb.Telemetry,
       # Start the PubSub system
