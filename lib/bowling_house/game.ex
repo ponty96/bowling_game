@@ -1,4 +1,4 @@
-defmodule BowlingHouse.Game do
+defmodule BowlingHouse.GameEngine do
   use GenServer
 
   alias BowlingHouse.Frame
@@ -8,8 +8,9 @@ defmodule BowlingHouse.Game do
   Start our queue and link it.
   This is a helper function
   """
-  def start_link(state \\ []) do
-    GenServer.start_link(__MODULE__, state, name: __MODULE__)
+  def start_link(options) when is_list(options) do
+    name = Keyword.fetch!(options, :name)
+    GenServer.start_link(__MODULE__, options, name: name)
   end
 
   @doc """
@@ -128,15 +129,15 @@ defmodule BowlingHouse.Game do
     {:reply, score, frames}
   end
 
-  def roll(no_of_pins) when is_integer(no_of_pins) and no_of_pins < 11 do
-    GenServer.call(__MODULE__, {:throw_ball, no_of_pins})
+  def roll(name \\ __MODULE__, no_of_pins) when is_integer(no_of_pins) and no_of_pins < 11 do
+    GenServer.call(name, {:throw_ball, no_of_pins})
   end
 
-  def reset_state do
-    GenServer.call(__MODULE__, :reset)
+  def reset_state(name \\ __MODULE__) do
+    GenServer.call(name, :reset)
   end
 
-  def get_game_score do
-    GenServer.call(__MODULE__, :game_score)
+  def get_game_score(name \\ __MODULE__) do
+    GenServer.call(name, :game_score)
   end
 end

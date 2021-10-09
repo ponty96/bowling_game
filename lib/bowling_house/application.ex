@@ -11,7 +11,7 @@ defmodule BowlingHouse.Application do
       # Start the Ecto repository
       BowlingHouse.Repo,
       # Start Bowling game
-      BowlingHouse.Game,
+      # BowlingHouse.GameEngine,
       # Start the Telemetry supervisor
       BowlingHouseWeb.Telemetry,
       # Start the PubSub system
