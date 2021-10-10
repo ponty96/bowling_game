@@ -2,7 +2,7 @@ defmodule BowlingHouse.GameManager do
   use GenServer
   alias BowlingHouse.GameEngine
 
-  @ets_table :game_lookup
+  @ets_table :bowling_game
 
   @impl true
   def init(opts) do
@@ -26,11 +26,13 @@ defmodule BowlingHouse.GameManager do
   def new(game_id) do
     :ets.insert_new(@ets_table, {game_id, _game_state = []})
 
+    # not handling get_game_state :not_found return here because
+    # ^^ would either insert a new record or fail if a record exists
     start_game_engine(game_id, _state = get_game_state(game_id))
   end
 
   def roll(game_id, no_of_pins) when is_integer(no_of_pins) and no_of_pins < 11 do
-    case call_game_engine(game_id, {:throw_ball, no_of_pins}) do
+    case maybe_start_and_call_game_engine(game_id, {:throw_ball, no_of_pins}) do
       {res, new_game_state} when res in [:hit, :exceed_frame_limit] ->
         upsert_ets(game_id, new_game_state)
         {res, new_game_state}
@@ -39,37 +41,57 @@ defmodule BowlingHouse.GameManager do
         # delete the record from ets
         # terminate the supervisor?
         {:end_of_game, new_game_state}
+
+      {:error, :not_found} ->
+        {:error, :not_found}
     end
   end
 
   def reset_state(game_id) do
     upsert_ets(game_id, [])
-    call_game_engine(game_id, :reset)
+    maybe_start_and_call_game_engine(game_id, :reset)
   end
 
   def get_game_score(game_id) do
-    call_game_engine(game_id, :game_score)
+    maybe_start_and_call_game_engine(game_id, :game_score)
   end
 
   def get_game_state(game_id) do
-    case :ets.lookup(:game_lookup, game_id) do
+    case :ets.lookup(@ets_table, game_id) do
       [] ->
-        []
+        :not_found
 
       [{_game_id, game_state}] ->
         game_state
     end
   end
 
-  defp call_game_engine(game_id, command) do
+  def end_game(game_id) do
+    :ets.delete(@ets_table, game_id)
+
+    try do
+      GenServer.call(via_tuple(game_id), :end)
+      :ok
+    catch
+      :exit, _ -> :ok
+    end
+  end
+
+  defp maybe_start_and_call_game_engine(game_id, command) do
     try do
       GenServer.call(via_tuple(game_id), command)
     catch
       :exit, {:noproc, _} ->
         # game engine not started probably because the game child process died
         # start game engine with the current state in ETS
-        :ok = start_game_engine(game_id, _state = get_game_state(game_id))
-        call_game_engine(game_id, command)
+        case get_game_state(game_id) do
+          :not_found ->
+            {:error, :not_found}
+
+          game_state ->
+            :ok = start_game_engine(game_id, _state = game_state)
+            maybe_start_and_call_game_engine(game_id, command)
+        end
     end
   end
 

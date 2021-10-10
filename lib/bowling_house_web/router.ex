@@ -20,6 +20,12 @@ defmodule BowlingHouseWeb.Router do
     get "/", PageController, :index
   end
 
+  scope "/api", BowlingHouseWeb do
+    pipe_through :api
+
+    resources "/game", GameController, only: [:create, :update, :show, :delete]
+  end
+
   # Other scopes may use custom stacks.
   # scope "/api", BowlingHouseWeb do
   #   pipe_through :api

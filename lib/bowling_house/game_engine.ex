@@ -1,5 +1,5 @@
 defmodule BowlingHouse.GameEngine do
-  use GenServer
+  use GenServer, restart: :transient
 
   alias BowlingHouse.Frame
   @bonus_point 10
@@ -20,6 +20,7 @@ defmodule BowlingHouse.GameEngine do
   @impl true
   def init(state), do: {:ok, state}
 
+  @impl true
   def handle_call({:throw_ball, hits}, _from, []) do
     # this is the first hit by the user
     frame = %Frame{
@@ -30,6 +31,7 @@ defmodule BowlingHouse.GameEngine do
     {:reply, {_message = :hit, _updated_frames = [frame]}, [frame]}
   end
 
+  @impl true
   def handle_call({:throw_ball, hits}, _from, frames) do
     [last_frame | reversed_frames] = Enum.reverse(frames)
 
@@ -122,25 +124,15 @@ defmodule BowlingHouse.GameEngine do
     {:hit, updated_frames}
   end
 
-  def handle_call(:reset, _from, frames) do
-    {:reply, frames, []}
+  @impl true
+  def handle_call(:end, _from, frames) do
+    {:stop, :normal, frames}
   end
 
+  @impl true
   def handle_call(:game_score, _from, frames) do
     score = Enum.reduce(frames, 0, &(&1.score + &2))
 
     {:reply, score, frames}
   end
-
-  # def roll(name \\ __MODULE__, no_of_pins) when is_integer(no_of_pins) and no_of_pins < 11 do
-  #   GenServer.call(name, {:throw_ball, no_of_pins})
-  # end
-
-  # def reset_state(name \\ __MODULE__) do
-  #   GenServer.call(name, :reset)
-  # end
-
-  # def get_game_score(name \\ __MODULE__) do
-  #   GenServer.call(name, :game_score)
-  # end
 end
