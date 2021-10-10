@@ -16,12 +16,30 @@ defmodule BowlingHouseWeb.GameController do
       {:error, :not_found} ->
         render_404(conn)
 
+      {:exceed_frame_limit, game_state} ->
+        game_score = GameManager.get_game_score(game_id)
+
+        conn
+        |> put_status(422)
+        |> put_view(GameView)
+        |> render("show.json", %{
+          game_state: game_state,
+          game_id: game_id,
+          message: "Can't roll balls, exceeds frame limit",
+          game_score: game_score
+        })
+
       {:end_of_game, game_state} ->
+        game_score = GameManager.get_game_score(game_id)
+
         conn
         |> put_status(200)
-        |> json(%{
-          message: "Game end",
-          game_state: game_state
+        |> put_view(GameView)
+        |> render("show.json", %{
+          game_state: game_state,
+          game_id: game_id,
+          message: "End of Game, thank you for playing",
+          game_score: game_score
         })
 
       {message, game_state} ->
