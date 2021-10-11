@@ -3,14 +3,15 @@ defmodule BowlingHouse.GameManagerTest do
 
   alias BowlingHouse.GameManager
   alias BowlingHouse.Frame
+  alias BowlingHouse.GameStorage
 
   describe "new/1" do
-    test "it starts a GameEngine and creates a record in :ets" do
+    test "it starts a GameEngine and creates a record in the GameStorage" do
       game_id = Ecto.UUID.generate()
 
       assert :ok == GameManager.new(game_id)
 
-      assert [{^game_id, []}] = :ets.lookup(:bowling_game, game_id)
+      assert [{^game_id, []}] = GameStorage.lookup(game_id)
 
       assert 0 == GenServer.call(via_tuple(game_id), :game_score)
     end
@@ -39,7 +40,7 @@ defmodule BowlingHouse.GameManagerTest do
     test "it starts a GameEngine, and rolls the ball when a valid record of the game_id exists in our storage withou an active GameEngine" do
       game_id = Ecto.UUID.generate()
 
-      :ets.insert(:bowling_game, {game_id, _frames = []})
+      GameStorage.insert(game_id, _frames = [])
 
       # we assert that the call to the game engine failed because the process was not found(started)
       assert catch_exit(GenServer.call(via_tuple(game_id), :game_score)) ==
@@ -117,7 +118,7 @@ defmodule BowlingHouse.GameManagerTest do
       # start a decoy game
       assert :ok == GameManager.new(decoy_game_id)
 
-      assert [{^game_id, []}] = :ets.lookup(:bowling_game, game_id)
+      assert [{^game_id, []}] = GameStorage.lookup(game_id)
 
       assert :ok == GameManager.end_game(game_id)
 
@@ -128,7 +129,6 @@ defmodule BowlingHouse.GameManagerTest do
                {:noproc,
                 {GenServer, :call,
                  [{:via, Registry, {BowlingHouse.GameEngineRegistry, game_id}}, :game_score, 5000]}}
-
 
       # decoy game GameEngine and storage record still exist
       assert GenServer.call(via_tuple(decoy_game_id), :game_score) == 0

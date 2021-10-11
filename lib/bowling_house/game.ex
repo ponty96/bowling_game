@@ -1,8 +1,7 @@
 defmodule BowlingHouse.GameManager do
   use GenServer
   alias BowlingHouse.GameEngine
-
-  @ets_table :bowling_game
+  alias BowlingHouse.GameStorage
 
   @impl true
   def init(opts) do
@@ -15,7 +14,7 @@ defmodule BowlingHouse.GameManager do
 
   @impl true
   def handle_continue(:setup_ets, state) do
-    :ets.new(@ets_table, [:set, :public, :named_table])
+    GameStorage.initialize()
 
     {:noreply, state}
   end
@@ -24,7 +23,7 @@ defmodule BowlingHouse.GameManager do
   # def new
 
   def new(game_id) do
-    :ets.insert_new(@ets_table, {game_id, _game_state = []})
+    GameStorage.insert_new(game_id, _game_state = [])
 
     # not handling get_game_state :not_found return here because
     # ^^ would either insert a new record or fail if a record exists
@@ -57,7 +56,7 @@ defmodule BowlingHouse.GameManager do
   end
 
   def get_game_state(game_id) do
-    case :ets.lookup(@ets_table, game_id) do
+    case GameStorage.lookup(game_id) do
       [] ->
         :not_found
 
@@ -67,7 +66,7 @@ defmodule BowlingHouse.GameManager do
   end
 
   def end_game(game_id) do
-    :ets.delete(@ets_table, game_id)
+    GameStorage.delete(game_id)
 
     try do
       GenServer.call(via_tuple(game_id), :end)
@@ -110,6 +109,6 @@ defmodule BowlingHouse.GameManager do
   end
 
   defp upsert_ets(game_id, state) do
-    :ets.insert(@ets_table, {game_id, _frames = state})
+    GameStorage.insert(game_id, _frames = state)
   end
 end
