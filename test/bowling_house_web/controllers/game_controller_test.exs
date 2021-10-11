@@ -3,6 +3,12 @@ defmodule BowlingHouseWeb.GameControllerTest do
 
   alias BowlingHouse.GameManager
 
+  setup do
+    ExUnit.Callbacks.on_exit(fn ->
+      BowlingHouse.GameCache.Redix.command(["FLUSHALL"])
+    end)
+  end
+
   describe "POST /api/game" do
     test "success: it initiates a new game instance", %{conn: conn} do
       # validate that the game manager returns not_found for a non existing game_id

@@ -5,6 +5,12 @@ defmodule BowlingHouse.GameManagerTest do
   alias BowlingHouse.Frame
   alias BowlingHouse.GameStorage
 
+  setup do
+    ExUnit.Callbacks.on_exit(fn ->
+      BowlingHouse.GameCache.Redix.command(["FLUSHALL"])
+    end)
+  end
+
   describe "new/1" do
     test "it starts a GameEngine and creates a record in the GameStorage" do
       game_id = Ecto.UUID.generate()
