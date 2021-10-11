@@ -1,0 +1,29 @@
+ version: '3.7'
+ services:
+   redis:
+     image: "redis:5.0-alpine"
+     ports:
+       - "6379:6379"
+     command: ["redis-server", "--appendonly", "yes"]
+
+   rcli:
+     image: "redis:5.0-alpine"
+     links:
+       - redis
+     command: redis-cli -h redis
+
+   web:
+     build:
+       context: .
+       dockerfile: Dockerfile
+     environment:
+        GAME_CACHE_REDIS_HOST: "redis"
+
+     depends_on:
+       - redis
+     ports:
+       - '4000:4000'
+     volumes:
+       - .:/app
+     links:
+       - redis

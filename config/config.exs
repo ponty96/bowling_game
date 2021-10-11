@@ -46,6 +46,15 @@ config :logger, :console,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+config :bowling_house,
+  ## Redis cache
+  game_cache: [
+    connection_pool_size: 5,
+    redis_database: 1,
+    redis_host: System.get_env("GAME_CACHE_REDIS_HOST") || "localhost",
+    redis_port: 6379
+  ]
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

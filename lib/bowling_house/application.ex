@@ -8,6 +8,8 @@ defmodule BowlingHouse.Application do
   @impl true
   def start(_type, _args) do
     children = [
+      BowlingHouse.GameCache.Redix,
+      {Task.Supervisor, name: BowlingHouse.GameCache.TaskSupervisor},
       # Start the Ecto repository
       BowlingHouse.Repo,
       # Start Bowling game
