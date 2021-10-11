@@ -128,3 +128,8 @@ When the user attempts to roll a ball after the game ended.
 
 
 ## Internal implementation
+The `BowlingHouse.GameStorage` is the storage wrapper around our Game storage - Redis.
+
+The `BowlingHouse.GameManager` is a long running Genserver that is used to start a game, roll balls, get the game state, and score. Internally, it defers the work by dynamically launching supervised `BowlingHouse.GameEngine` Genservers.
+
+The `BowlingHouse.GameEngine` handles the core game algorithm.
