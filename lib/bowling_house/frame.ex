@@ -3,10 +3,6 @@ defmodule BowlingHouse.Frame do
   @maximum_hits 10
   defstruct first_throw_pins_hits: 0, second_throw_pins_hits: nil, score: 0
 
-  # is the frame a strike?
-  # is the frame a spare?
-  # is the frame over?
-  # update the frame?
   def strike?(%__MODULE__{first_throw_pins_hits: @maximum_hits}), do: true
   def strike?(%__MODULE__{}), do: false
 
